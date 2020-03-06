@@ -6,6 +6,9 @@
 
 Adafruit_MLX90614 mlx = Adafruit_MLX90614();
 
+char payload[10];
+char bodyTemp[6], ambTemp[6], objTemp[6];
+
 float calculateForeheadToBody(float y) {
   //https://docs.google.com/spreadsheets/d/1EtJas-raX3Qd3OiARKWVPCCqhRaQXOXToTx4brYeH8Q/edit?usp=sharing
   //based on https://www.omronhealthcare-ap.com/Content/uploads/products/68363e5e293440bf95f724dceb4fa860.pdf
@@ -16,16 +19,19 @@ float calculateForeheadToBody(float y) {
 }
 
 void setup() {
+  pinMode(A2,INPUT_PULLUP);
   Serial.begin(9600);
-  Serial.println("MLX90614 Body Temperature Measurement");
   mlx.begin();
 }
 
 void loop() {
-  float objTemp = mlx.readObjectTempC();
-  Serial.print("Ambient = "); Serial.print(mlx.readAmbientTempC());
-  Serial.print("Body = "); Serial.print(calculateForeheadToBody(objTemp));
-  Serial.print("*C\tObject = "); Serial.print(objTemp); Serial.println("*C");
-  Serial.println();
-  delay(500);
+  float readObj = mlx.readObjectTempC();
+  
+  dtostrf(calculateForeheadToBody(readObj), 4, 2, bodyTemp);
+  dtostrf(mlx.readAmbientTempC(), 4, 2, ambTemp);
+  dtostrf(readObj, 4, 2, objTemp);
+  //0=object detected, 1=object undetected, range object 30cm 
+  sprintf(payload,"%s:%s:%s:%d\r\n",bodyTemp,objTemp,ambTemp,digitalRead(A2));
+  Serial.print(payload);
+  delay(200);
 }
